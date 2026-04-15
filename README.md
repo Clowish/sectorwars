@@ -16,14 +16,14 @@ they lack reasons to deploy it.
 
 ## Key mechanics (v2)
 
-- **Capital depreciation** — idle capital loses 5%/turn, making HOLD a losing strategy
+- **Capital depreciation** - idle capital loses 5%/turn, making HOLD a losing strategy
 - **Supply chain interdependency** - circular dependency graph penalizes isolated sectors
-- **Superlinear synergy returns** — mutual investment yields 2×–3× returns
-- **Escrow-backed contracts** — accept_deal auto-executes, escrow deposit signals commitment
-- **Episodic memory** — models track opponent behavior across turns
-- **Hidden agendas** — asymmetric secret objectives prevent identical strategies
-- **Activity-weighted scoring** — passive play cannot win even with preserved capital
-- **Deterministic seeding** — every game reproducible with --seed=N
+- **Superlinear synergy returns** - mutual investment yields 2×–3× returns
+- **Escrow-backed contracts** - accept_deal auto-executes, escrow deposit signals commitment
+- **Episodic memory** - models track opponent behavior across turns
+- **Hidden agendas** - asymmetric secret objectives prevent identical strategies
+- **Activity-weighted scoring** - passive play cannot win even with preserved capital
+- **Deterministic seeding** - every game reproducible with --seed=N
 
 ## Models supported
 
@@ -81,15 +81,15 @@ instruction-tuned models (Llama 8B) respond better to cooperative framing —
 opposite sensitivity patterns across model families.
 
 ## Project structure
-index.js        — game loop, Express server
-arbiter.js      — all game mechanics and state mutations
-events.js       — event system with cooldowns
-models.js       — API callers for all providers
-prompts.js      — system prompts and player types
-ratings.js      — Bradley-Terry Elo across 3 dimensions
-tournament.js   — automated multi-game runner
-rng.js          — seeded PRNG for reproducibility
-config.js       — all tuneable parameters
+index.js        - game loop, Express server
+arbiter.js      - all game mechanics and state mutations
+events.js       - event system with cooldowns
+models.js       - API callers for all providers
+prompts.js      - system prompts and player types
+ratings.js      - Bradley-Terry Elo across 3 dimensions
+tournament.js   - automated multi-game runner
+rng.js          - seeded PRNG for reproducibility
+config.js       - all tuneable parameters
 
 ## Research context
 
