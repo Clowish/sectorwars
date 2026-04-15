@@ -17,7 +17,7 @@ they lack reasons to deploy it.
 ## Key mechanics (v2)
 
 - **Capital depreciation** — idle capital loses 5%/turn, making HOLD a losing strategy
-- **Supply chain interdependency** — circular dependency graph penalizes isolated sectors
+- **Supply chain interdependency** - circular dependency graph penalizes isolated sectors
 - **Superlinear synergy returns** — mutual investment yields 2×–3× returns
 - **Escrow-backed contracts** — accept_deal auto-executes, escrow deposit signals commitment
 - **Episodic memory** — models track opponent behavior across turns
