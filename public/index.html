@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SectorWars — Observer Dashboard</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #7d8590;
+    --energy: #f0883e;
+    --technology: #58a6ff;
+    --agriculture: #3fb950;
+    --finance: #bc8cff;
+    --danger: #f85149;
+    --warning: #d29922;
+    --success: #3fb950;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  header h1 { font-size: 18px; font-weight: 700; letter-spacing: 0.5px; }
+  header h1 span { color: var(--muted); font-weight: 400; }
+  .turn-badge {
+    background: #21262d;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .progress-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: #21262d;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--technology), var(--finance));
+    border-radius: 3px;
+    transition: width 0.8s ease;
+    width: 0%;
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 6px var(--success);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ── Layout ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    grid-template-rows: auto 1fr;
+    gap: 12px;
+    padding: 12px;
+    height: calc(100vh - 57px);
+  }
+
+  /* ── Sector cards ── */
+  .sector-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .sector-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .sector-card.bankrupt { opacity: 0.4; border-color: var(--danger); }
+  .sector-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .sector-card[data-sector="energy"]::before { background: var(--energy); }
+  .sector-card[data-sector="technology"]::before { background: var(--technology); }
+  .sector-card[data-sector="agriculture"]::before { background: var(--agriculture); }
+  .sector-card[data-sector="finance"]::before { background: var(--finance); }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+  .card-name { font-weight: 700; font-size: 15px; }
+  .card-model {
+    font-size: 10px;
+    color: var(--muted);
+    background: #21262d;
+    border-radius: 4px;
+    padding: 2px 6px;
+  }
+  .card-type {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .card-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 5px 0;
+    font-size: 13px;
+  }
+  .stat-label { color: var(--muted); }
+  .stat-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat-value.positive { color: var(--success); }
+  .stat-value.negative { color: var(--danger); }
+
+  .action-pill {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .action-develop { background: #1f3a2b; color: var(--agriculture); }
+  .action-invest { background: #1a2d4a; color: var(--technology); }
+  .action-negotiate { background: #2d1f3a; color: var(--finance); }
+  .action-hold { background: #2a2a2a; color: var(--muted); }
+  .action-undercut { background: #3a1f1f; color: var(--danger); }
+  .action-lobby { background: #3a2e1f; color: var(--warning); }
+  .action-unknown { background: #21262d; color: var(--muted); }
+
+  .trend-arrow { font-size: 16px; margin-left: 4px; }
+
+  /* Market share mini bar */
+  .mshare-bar {
+    margin-top: 8px;
+    height: 4px;
+    background: #21262d;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .mshare-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.8s ease;
+  }
+  .sector-card[data-sector="energy"] .mshare-fill { background: var(--energy); }
+  .sector-card[data-sector="technology"] .mshare-fill { background: var(--technology); }
+  .sector-card[data-sector="agriculture"] .mshare-fill { background: var(--agriculture); }
+  .sector-card[data-sector="finance"] .mshare-fill { background: var(--finance); }
+
+  /* ── Bottom panels ── */
+  .bottom-panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    overflow: hidden;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 14px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  /* Turn log */
+  .log-entry {
+    padding: 4px 0;
+    border-bottom: 1px solid #1c2128;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text);
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-entry.event { color: var(--warning); }
+  .log-entry.synergy { color: var(--finance); font-weight: 600; }
+  .log-entry.bankruptcy { color: var(--danger); font-weight: 600; }
+  .log-entry.message { color: #7ee3f8; }
+  .log-turn-divider {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    margin: 8px 0 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Message thread */
+  .msg-entry {
+    margin-bottom: 10px;
+    padding: 8px 10px;
+    background: #21262d;
+    border-radius: 6px;
+    font-size: 12px;
+    border-left: 3px solid var(--muted);
+  }
+  .msg-entry[data-from="energy"] { border-left-color: var(--energy); }
+  .msg-entry[data-from="technology"] { border-left-color: var(--technology); }
+  .msg-entry[data-from="agriculture"] { border-left-color: var(--agriculture); }
+  .msg-entry[data-from="finance"] { border-left-color: var(--finance); }
+  .msg-meta { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+  .msg-binding { color: var(--warning); font-weight: 600; }
+
+  /* ── Score panel (right column) ── */
+  .score-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    grid-row: span 2;
+  }
+  .score-entry {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .score-entry:last-child { border-bottom: none; }
+  .score-rank { font-size: 11px; color: var(--muted); }
+  .score-name { font-weight: 700; font-size: 14px; margin: 2px 0; }
+  .score-value { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .score-bar-wrap {
+    margin-top: 6px;
+    height: 6px;
+    background: #21262d;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.8s ease;
+  }
+  .score-entry[data-sector="energy"] .score-bar-fill { background: var(--energy); }
+  .score-entry[data-sector="technology"] .score-bar-fill { background: var(--technology); }
+  .score-entry[data-sector="agriculture"] .score-bar-fill { background: var(--agriculture); }
+  .score-entry[data-sector="finance"] .score-bar-fill { background: var(--finance); }
+
+  .synergy-list {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    margin-top: auto;
+  }
+  .synergy-badge {
+    display: inline-block;
+    margin: 2px 4px 2px 0;
+    padding: 2px 8px;
+    background: #2d1f3a;
+    color: var(--finance);
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .synergy-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  /* ── Final overlay ── */
+  #final-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  #final-overlay.show { display: flex; }
+  .final-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px 40px;
+    text-align: center;
+    max-width: 400px;
+  }
+  .final-box h2 { font-size: 24px; margin-bottom: 6px; }
+  .final-box .winner-name { font-size: 32px; font-weight: 800; margin: 12px 0; }
+  .final-box .winner-score { color: var(--muted); font-size: 16px; }
+  .final-close {
+    margin-top: 20px;
+    padding: 8px 24px;
+    background: #21262d;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .final-close:hover { background: #2a2a2a; }
+
+  /* ── Pause/Resume buttons ── */
+  .ctrl-btn {
+    padding: 4px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .ctrl-btn:disabled { opacity: 0.35; cursor: default; }
+  .btn-pause { background: #2d1f1f; color: var(--danger); border-color: var(--danger); }
+  .btn-resume { background: #1f2d1f; color: var(--success); border-color: var(--success); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="status-dot" id="status-dot"></div>
+  <h1>SectorWars <span>Observer Dashboard</span></h1>
+  <div class="turn-badge" id="turn-badge">Turn — / 15</div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progress-bar"></div>
+  </div>
+  <button class="ctrl-btn btn-pause" id="btn-pause" onclick="sendCtrl('pause')">Pause</button>
+  <button class="ctrl-btn btn-resume" id="btn-resume" onclick="sendCtrl('resume')" disabled>Resume</button>
+</header>
+
+<div class="main-grid">
+  <!-- Sector cards row -->
+  <div class="sector-cards" id="sector-cards">
+    <!-- Cards injected by JS -->
+  </div>
+
+  <!-- Score panel (right, spans 2 rows) -->
+  <div class="score-panel" id="score-panel">
+    <div class="panel-header">Score Projection</div>
+    <div id="score-entries"></div>
+    <div class="synergy-list" id="synergy-list">
+      <div class="synergy-label">Active Synergies</div>
+      <div id="synergy-badges"></div>
+    </div>
+  </div>
+
+  <!-- Bottom panels -->
+  <div class="bottom-panels">
+    <div class="panel">
+      <div class="panel-header">Turn Log</div>
+      <div class="panel-body" id="turn-log"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">Message Thread</div>
+      <div class="panel-body" id="message-thread"></div>
+    </div>
+  </div>
+</div>
+
+<div id="final-overlay">
+  <div class="final-box">
+    <h2>Game Over</h2>
+    <div class="winner-name" id="final-winner-name">—</div>
+    <div class="winner-score" id="final-winner-score"></div>
+    <button class="final-close" onclick="document.getElementById('final-overlay').classList.remove('show')">Close</button>
+  </div>
+</div>
+
+<script>
+const SECTOR_COLORS = {
+  energy: '#f0883e',
+  technology: '#58a6ff',
+  agriculture: '#3fb950',
+  finance: '#bc8cff',
+};
+
+const ACTION_CLASSES = {
+  develop: 'action-develop',
+  invest: 'action-invest',
+  negotiate: 'action-negotiate',
+  hold: 'action-hold',
+  undercut: 'action-undercut',
+  lobby: 'action-lobby',
+};
+
+let prevRevenues = {};
+let maxScore = 1;
+
+// ── Card management ────────────────────────────────────────────────────────
+function ensureCard(id, sector) {
+  let card = document.querySelector(`.sector-card[data-sector="${id}"]`);
+  if (!card) {
+    card = document.createElement('div');
+    card.className = 'sector-card';
+    card.dataset.sector = id;
+    document.getElementById('sector-cards').appendChild(card);
+  }
+  // Placeholder cards lack data-field elements — replace their innerHTML on first real data
+  if (!card.querySelector('[data-field="capital"]')) {
+    card.innerHTML = `
+      <div class="card-header">
+        <div>
+          <div class="card-name">${sector.name}</div>
+          <div class="card-type">${(sector.player_type || '').replace(/_/g,' ')}</div>
+        </div>
+        <div class="card-model">${sector.owner_model || ''}</div>
+      </div>
+      <div class="card-stat"><span class="stat-label">Capital</span><span class="stat-value" data-field="capital">—</span></div>
+      <div class="card-stat"><span class="stat-label">Revenue</span><span class="stat-value" data-field="revenue">—</span></div>
+      <div class="card-stat"><span class="stat-label">Mkt Share</span><span class="stat-value" data-field="mshare">—</span></div>
+      <div class="card-stat"><span class="stat-label">Capacity</span><span class="stat-value" data-field="capacity">—</span></div>
+      <div class="mshare-bar"><div class="mshare-fill" data-field="mshare-bar" style="width:0%"></div></div>
+      <div data-field="action-pill"></div>
+    `;
+  }
+  return card;
+}
+
+function updateCard(id, sector, action) {
+  const card = ensureCard(id, sector);
+  const rev = sector.last_revenue;
+  const prevRev = prevRevenues[id] || 0;
+  const trend = rev > prevRev ? '↑' : rev < prevRev ? '↓' : '→';
+  prevRevenues[id] = rev;
+
+  card.querySelector('[data-field="capital"]').textContent = formatNum(sector.capital);
+  const revEl = card.querySelector('[data-field="revenue"]');
+  revEl.textContent = formatNum(rev) + ' ' + trend;
+  revEl.className = 'stat-value ' + (rev >= 0 ? 'positive' : 'negative');
+  card.querySelector('[data-field="mshare"]').textContent = (sector.market_share * 100).toFixed(1) + '%';
+  card.querySelector('[data-field="capacity"]').textContent = sector.production_capacity || '—';
+  card.querySelector('[data-field="mshare-bar"]').style.width = (sector.market_share * 100) + '%';
+
+  const pillContainer = card.querySelector('[data-field="action-pill"]');
+  const cls = ACTION_CLASSES[action] || 'action-unknown';
+  pillContainer.innerHTML = `<span class="action-pill ${cls}">${action || 'unknown'}</span>`;
+}
+
+// ── Score panel ────────────────────────────────────────────────────────────
+function updateScores(scores) {
+  if (!scores) return;
+  const entries = Object.entries(scores).sort((a, b) => b[1].score - a[1].score);
+  maxScore = Math.max(...entries.map(([, v]) => v.score), 1);
+
+  const container = document.getElementById('score-entries');
+  container.innerHTML = '';
+
+  entries.forEach(([id, info], i) => {
+    const pct = Math.max(0, Math.min(100, (info.score / maxScore) * 100));
+    const div = document.createElement('div');
+    div.className = 'score-entry';
+    div.dataset.sector = id;
+    div.innerHTML = `
+      <div class="score-rank">#${i+1} ${info.model || ''}</div>
+      <div class="score-name">${info.name}</div>
+      <div class="score-value">${formatNum(info.score)}</div>
+      <div class="score-bar-wrap">
+        <div class="score-bar-fill" style="width:${pct}%"></div>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ── Synergies ──────────────────────────────────────────────────────────────
+const SYNERGY_LABELS = {
+  green_tech: 'Green Tech',
+  fintech_boom: 'Fintech Boom',
+  biofuel: 'Biofuel',
+  stable_dividend: 'Stable Dividend',
+};
+
+function updateSynergies(synergies) {
+  const el = document.getElementById('synergy-badges');
+  if (!synergies || synergies.length === 0) {
+    el.innerHTML = '<span style="color:var(--muted);font-size:12px">None yet</span>';
+    return;
+  }
+  el.innerHTML = synergies.map((s) =>
+    `<span class="synergy-badge">${SYNERGY_LABELS[s] || s}</span>`
+  ).join('');
+}
+
+// ── Turn log ───────────────────────────────────────────────────────────────
+function appendTurnLog(turn, events) {
+  const log = document.getElementById('turn-log');
+  const divider = document.createElement('div');
+  divider.className = 'log-turn-divider';
+  divider.textContent = `— Turn ${turn} —`;
+  log.appendChild(divider);
+
+  const messages = [];
+
+  events.forEach((e) => {
+    const div = document.createElement('div');
+    div.className = 'log-entry';
+    const lower = e.toLowerCase();
+    if (lower.includes('synergy')) div.classList.add('synergy');
+    else if (lower.includes('bankrupt')) div.classList.add('bankruptcy');
+    else if (lower.includes('event:') || lower.includes('upcoming:')) div.classList.add('event');
+    else if (lower.includes('→') && (lower.includes('binding') || e.includes('"'))) {
+      div.classList.add('message');
+      // Also send to message thread
+      messages.push(e);
+    }
+    div.textContent = e;
+    log.appendChild(div);
+  });
+
+  log.scrollTop = log.scrollHeight;
+  return messages;
+}
+
+// ── Message thread ─────────────────────────────────────────────────────────
+function appendMessages(turn, events) {
+  const thread = document.getElementById('message-thread');
+  events.forEach((e) => {
+    // Parse "SenderName → TargetName: "message""
+    const match = e.match(/^(.+?) → (.+?): "(.+)"(.*)$/);
+    if (!match) return;
+    const from_name = match[1].trim().toLowerCase();
+    const to_name = match[2].trim();
+    const content = match[3];
+    const binding = match[4] && match[4].includes('BINDING');
+
+    const div = document.createElement('div');
+    div.className = 'msg-entry';
+    div.dataset.from = from_name;
+    div.innerHTML = `
+      <div class="msg-meta">Turn ${turn} · <strong>${match[1].trim()}</strong> → <strong>${to_name}</strong>${binding ? ' · <span class="msg-binding">BINDING DEAL</span>' : ''}</div>
+      <div>${escHtml(content)}</div>
+    `;
+    thread.appendChild(div);
+    thread.scrollTop = thread.scrollHeight;
+  });
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function formatNum(n) {
+  if (n == null) return '—';
+  return Math.round(n).toLocaleString();
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Pause / Resume ─────────────────────────────────────────────────────────
+function sendCtrl(action) {
+  fetch('/' + action, { method: 'POST' });
+  const paused = action === 'pause';
+  document.getElementById('btn-pause').disabled = paused;
+  document.getElementById('btn-resume').disabled = !paused;
+}
+
+// ── SSE connection ─────────────────────────────────────────────────────────
+function connect() {
+  const es = new EventSource('/events');
+
+  es.onopen = () => {
+    document.getElementById('status-dot').style.background = 'var(--success)';
+  };
+
+  es.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+
+    if (data.type === 'final') {
+      updateScores(data.scores);
+      if (data.winner) {
+        document.getElementById('final-winner-name').textContent = data.winner.name;
+        document.getElementById('final-winner-score').textContent =
+          `Score: ${formatNum(data.winner.score)} · ${data.winner.model} [${data.winner.player_type}]`;
+        document.getElementById('final-overlay').classList.add('show');
+      }
+      document.getElementById('status-dot').style.background = 'var(--muted)';
+      document.getElementById('status-dot').style.animation = 'none';
+      document.getElementById('btn-pause').disabled = true;
+      document.getElementById('btn-resume').disabled = true;
+      return;
+    }
+
+    const { turn, total_turns, sectors, events, scores, active_synergies, bankrupt } = data;
+
+    // Header
+    document.getElementById('turn-badge').textContent = `Turn ${turn} / ${total_turns}`;
+    document.getElementById('progress-bar').style.width = ((turn / total_turns) * 100) + '%';
+
+    // Sector cards
+    Object.entries(sectors).forEach(([id, sector]) => {
+      updateCard(id, sector, sector.action);
+    });
+
+    // Mark bankrupt
+    if (bankrupt) {
+      bankrupt.forEach((b) => {
+        const card = document.querySelector(`.sector-card[data-sector="${b.id}"]`);
+        if (card) card.classList.add('bankrupt');
+      });
+    }
+
+    // Scores
+    updateScores(scores);
+    updateSynergies(active_synergies);
+
+    // Log + messages
+    const msgs = appendTurnLog(turn, events || []);
+    appendMessages(turn, msgs);
+  };
+
+  es.onerror = () => {
+    document.getElementById('status-dot').style.background = 'var(--danger)';
+    es.close();
+    setTimeout(connect, 3000); // reconnect
+  };
+}
+
+// Init cards placeholder
+['energy','technology','agriculture','finance'].forEach((id) => {
+  const names = { energy:'Energy', technology:'Technology', agriculture:'Agriculture', finance:'Finance' };
+  const card = document.createElement('div');
+  card.className = 'sector-card';
+  card.dataset.sector = id;
+  card.innerHTML = `
+    <div class="card-header">
+      <div><div class="card-name">${names[id]}</div><div class="card-type">awaiting...</div></div>
+      <div class="card-model">—</div>
+    </div>
+    <div style="color:var(--muted);font-size:12px;padding-top:8px">Waiting for first turn...</div>
+  `;
+  document.getElementById('sector-cards').appendChild(card);
+});
+
+updateSynergies([]);
+connect();
+</script>
+</body>
+</html>

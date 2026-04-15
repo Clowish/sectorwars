@@ -1,0 +1,14 @@
+# Secrets
+.env
+
+# Dependencies
+node_modules/
+
+# Game data (generowane lokalnie, nie commitujemy)
+game_state.json
+game_log.jsonl
+ratings.json
+
+# OS
+.DS_Store
+Thumbs.db

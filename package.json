@@ -1,0 +1,24 @@
+{
+  "name": "sectorwars",
+  "version": "1.0.0",
+  "description": "AI Model Competition Economic Strategy Game",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dry-run": "node index.js --dry-run",
+    "variant-0": "node index.js --prompt-variant=0",
+    "variant-1": "node index.js --prompt-variant=1",
+    "variant-2": "node index.js --prompt-variant=2",
+    "dry-variant-0": "node index.js --dry-run --prompt-variant=0",
+    "dry-variant-1": "node index.js --dry-run --prompt-variant=1",
+    "dry-variant-2": "node index.js --dry-run --prompt-variant=2",
+    "tournament":          "node tournament.js --games=10",
+    "tournament-50":       "node tournament.js --games=50",
+    "tournament-dry":      "node tournament.js --games=6 --dry-run",
+    "tournament-dry-fast": "node tournament.js --games=3 --dry-run --delay=500"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}
