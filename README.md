@@ -11,7 +11,7 @@ Four AI models simultaneously control sectors (Energy, Technology, Agriculture, 
 in a 15-turn game. Each turn, models receive a structured JSON state and return one action.
 The game engine enforces binding contracts, tracks reputation, and penalizes passivity.
 
-Inspired by the research finding that LLMs don't lack strategic capability —
+Inspired by the research finding that LLMs don't lack strategic capability -
 they lack reasons to deploy it.
 
 ## Key mechanics (v2)
